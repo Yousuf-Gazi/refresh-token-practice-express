@@ -1,13 +1,15 @@
 const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
+const requestIp = require("request-ip");
 const mongoose = require("mongoose");
 require("./authMiddlewarePs");
 
 const app = express();
-app.use([cors(), morgan("dev"), express.json()]);
+app.use([cors(), morgan("dev"), express.json(), requestIp.mw()]);
 
 app.use("/auth", require("./authRoutes"));
+app.use("/tokens", require("./rtRouter"));
 app.use("/", require("./appRoutes"));
 
 app.use("/health", (_req, res) => {

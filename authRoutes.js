@@ -1,6 +1,8 @@
 const router = require("express").Router();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const { addDays } = require("date-fns");
+const RefreshToken = require("./RefreshToken");
 const User = require("./User");
 
 const checkIfUserExist = async (email) => {
@@ -63,13 +65,34 @@ router.post("/login", async (req, res) => {
       },
       "JWT_STRONG_SECRET",
       {
-        expiresIn: "1h",
+        expiresIn: "30s",
       }
     );
 
+    const refreshToken = new RefreshToken({
+      user: userExist._id,
+      issuedIp: req.clientIp || "N/A",
+      token: "",
+      expiredAt: addDays(new Date(), 30),
+    });
+
+    const rToken = jwt.sign(
+      {
+        _id: refreshToken._id,
+        user: userExist._id,
+        name: userExist.name,
+        email: userExist.email,
+      },
+      "JWT_STRONG_SECRET"
+    );
+
+    refreshToken.token = rToken;
+    await refreshToken.save();
+
     res.status(200).json({
       message: "Logged in and everything is okay",
-      token,
+      accessToken: token,
+      refreshToken: rToken,
     });
   } catch {
     res.status(500).json({
